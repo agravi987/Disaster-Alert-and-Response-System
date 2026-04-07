@@ -75,6 +75,18 @@ Default `.env` values:
   - any alert: `admin`
   - own alert only: `citizen`
 
+## Dispatch and Team Workflow
+
+- Alert form is hidden by default and opens on demand via **Add Alert** for cleaner dashboards.
+- Rescue Center can:
+  - view live rescue-team availability (`available`, `busy`, `offline`)
+  - assign active alerts to only available rescue teams
+  - track all current mission assignments in one board
+- Rescue Team can:
+  - update check-in availability from the check-in page
+  - manage assigned missions (`Assigned` -> `In Progress` -> `Completed`)
+  - automatically return to available when active missions are completed
+
 ## Theme Support
 
 - Full dark/light mode support
@@ -101,6 +113,11 @@ Open [http://localhost:3000](http://localhost:3000).
 - `PUT /api/alerts/:id`
 - `PATCH /api/alerts/:id`
 - `DELETE /api/alerts/:id`
+- `GET /api/rescue-teams`
+- `PATCH /api/rescue-teams`
+- `GET /api/missions`
+- `POST /api/missions`
+- `PATCH /api/missions/:id`
 
 ## End-to-End Tests
 
@@ -117,6 +134,8 @@ Major covered scenarios:
 - Role-based login redirects for all 4 roles
 - Cross-role access protection
 - Responsibility-based RBAC checks for alert actions
+- Rescue-center to rescue-team assignment workflow
+- Hidden-on-load alert form UX with Add Alert toggle
 - Admin navigation links
 - Theme toggle and persistence
 - Logout flow

@@ -4,9 +4,15 @@ import RoleShell from "@/components/role-shell";
 import { getRoleNavItems } from "@/components/role-nav";
 import SummaryCards from "@/components/summary-cards";
 import { requireRole } from "@/lib/auth-server";
+import { getMissionStats } from "@/lib/mission-store";
+import { getRescueTeamStatusByEmail } from "@/lib/team-store";
 
 export default async function RescueTeamDashboardPage() {
   const session = await requireRole("rescue-team");
+  const [missionStats, teamStatus] = await Promise.all([
+    getMissionStats(session.email ?? undefined),
+    session.email ? getRescueTeamStatusByEmail(session.email) : null,
+  ]);
 
   return (
     <RoleShell
@@ -21,26 +27,26 @@ export default async function RescueTeamDashboardPage() {
           cards={[
             {
               label: "Active Missions",
-              value: "2",
-              helper: "Currently assigned",
+              value: (missionStats.assigned + missionStats.inProgress).toString(),
+              helper: "Assigned + in progress",
               icon: FiTruck,
             },
             {
-              label: "Completed Today",
-              value: "4",
-              helper: "Successfully resolved",
+              label: "Completed",
+              value: missionStats.completed.toString(),
+              helper: "Resolved by your team",
               icon: FiCheckCircle,
             },
             {
-              label: "Next Dispatch",
-              value: "8m",
-              helper: "Estimated mobilization",
+              label: "Current Status",
+              value: teamStatus?.status ? teamStatus.status.toUpperCase() : "UNKNOWN",
+              helper: "Availability from check-in",
               icon: FiClock,
             },
             {
-              label: "Equipment",
-              value: "Ready",
-              helper: "All kits checked",
+              label: "Active Queue",
+              value: (teamStatus?.activeMissionCount ?? 0).toString(),
+              helper: "Open missions assigned",
               icon: FiTool,
             },
           ]}
@@ -52,7 +58,7 @@ export default async function RescueTeamDashboardPage() {
           Shift Brief
         </h2>
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-          Stay on standby for high-priority flood and fire incidents in Sectors 5-8.
+          Keep check-in status current and move assignments through In Progress to Completed.
         </p>
       </section>
 

@@ -48,6 +48,15 @@ async function createAlertViaForm(
   description: string,
   location: string,
 ) {
+  const titleInput = page.getByTestId("alert-title");
+  if ((await titleInput.count()) === 0) {
+    const toggleButton = page.getByTestId("toggle-alert-form");
+    if ((await toggleButton.count()) > 0) {
+      await toggleButton.click();
+    }
+  }
+
+  await expect(page.getByTestId("alert-title")).toBeVisible();
   await page.getByTestId("alert-title").fill(title);
   await page.getByTestId("alert-description").fill(description);
   await page.getByTestId("alert-location").fill(location);
@@ -210,6 +219,52 @@ test.describe("Role Responsibilities and RBAC", () => {
     await expect(alertCard).toContainText("Resolved");
   });
 
+  test("Rescue center can assign an active alert to an available rescue team", async ({
+    page,
+  }) => {
+    const title = `Center-assignment ${Date.now()}`;
+
+    await loginAs(page, "citizen");
+    await createAlertViaForm(
+      page,
+      title,
+      "Assignment workflow validation alert.",
+      "Sector 12",
+    );
+    await logout(page);
+
+    await loginAs(page, "rescueCenter");
+    await page.goto("/rescue-center/assignments");
+    await expect(page.getByTestId("team-status-list")).toBeVisible();
+
+    const alertsResponse = await page.request.get("/api/alerts");
+    expect(alertsResponse.status()).toBe(200);
+    const alertsPayload = (await alertsResponse.json()) as {
+      alerts: Array<{ id: string; title: string }>;
+    };
+    const assignedAlert = alertsPayload.alerts.find((alert) => alert.title === title);
+    expect(assignedAlert).toBeDefined();
+
+    const alertSelect = page.getByTestId("assignment-alert-select");
+    await expect(
+      alertSelect.locator(`option[value="${assignedAlert!.id}"]`),
+    ).toHaveCount(1);
+    await alertSelect.selectOption(assignedAlert!.id);
+
+    const teamSelect = page.getByTestId("assignment-team-select");
+    const teamEmail = await teamSelect.locator("option").nth(1).getAttribute("value");
+    expect(teamEmail).toBeTruthy();
+    await teamSelect.selectOption(teamEmail!);
+    await page.getByTestId("assignment-submit").click();
+
+    await expect(page.getByText("Mission assigned successfully.")).toBeVisible();
+    await logout(page);
+
+    await loginAs(page, "rescueTeam");
+    await page.goto("/rescue-team/my-missions");
+    await expect(page.getByText(title)).toBeVisible();
+  });
+
   test("Citizen cannot delete alerts created by other roles", async ({ page }) => {
     const title = `Admin-owned ${Date.now()}`;
 
@@ -248,6 +303,12 @@ test.describe("Admin Dashboard Major Flows", () => {
 
     await page.getByTestId("nav-all-alerts").click();
     await expect(page).toHaveURL(/\/admin\/all-alerts$/);
+  });
+
+  test("Alert form stays hidden until Add Alert is clicked", async ({ page }) => {
+    await expect(page.getByTestId("alert-title")).toHaveCount(0);
+    await page.getByTestId("toggle-alert-form").click();
+    await expect(page.getByTestId("alert-title")).toBeVisible();
   });
 
   test("Theme toggle switches mode and persists after reload", async ({ page }) => {
@@ -304,6 +365,7 @@ test.describe("Admin Dashboard Major Flows", () => {
   });
 
   test("Submitting an empty alert form shows validation error", async ({ page }) => {
+    await page.getByTestId("toggle-alert-form").click();
     await page.getByTestId("alert-submit").click();
     await expect(page.getByTestId("alert-form-error")).toHaveText(
       "All fields are required.",

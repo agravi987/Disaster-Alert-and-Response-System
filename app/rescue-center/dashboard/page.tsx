@@ -3,10 +3,21 @@ import AlertDashboard from "@/components/alert-dashboard";
 import RoleShell from "@/components/role-shell";
 import { getRoleNavItems } from "@/components/role-nav";
 import SummaryCards from "@/components/summary-cards";
+import { getAlerts, getAlertStats } from "@/lib/alert-store";
 import { requireRole } from "@/lib/auth-server";
+import { getMissionStats } from "@/lib/mission-store";
+import { getRescueTeamStatuses } from "@/lib/team-store";
 
 export default async function RescueCenterDashboardPage() {
   const session = await requireRole("rescue-center");
+  const [alertStats, alerts, teamStatuses, missionStats] = await Promise.all([
+    getAlertStats(),
+    getAlerts(),
+    getRescueTeamStatuses(),
+    getMissionStats(),
+  ]);
+  const teamsAvailable = teamStatuses.filter((team) => team.status === "available").length;
+  const hotspot = alerts.find((alert) => alert.status === "Active")?.location ?? "No hotspot";
 
   return (
     <RoleShell
@@ -21,26 +32,26 @@ export default async function RescueCenterDashboardPage() {
           cards={[
             {
               label: "Incoming Alerts",
-              value: "9",
+              value: alertStats.active.toString(),
               helper: "Awaiting triage",
               icon: FiLayers,
             },
             {
               label: "Teams Available",
-              value: "5",
+              value: teamsAvailable.toString(),
               helper: "Ready for dispatch",
               icon: FiTruck,
             },
             {
-              label: "Dispatch Time",
-              value: "12m",
-              helper: "Current average",
+              label: "Open Missions",
+              value: (missionStats.assigned + missionStats.inProgress).toString(),
+              helper: "Assigned to field teams",
               icon: FiClock,
             },
             {
               label: "Hotspot",
-              value: "Sector 7",
-              helper: "Highest current activity",
+              value: hotspot,
+              helper: "Latest active alert location",
               icon: FiMapPin,
             },
           ]}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { FiPlus, FiX } from "react-icons/fi";
 import AlertsList from "@/components/alerts-list";
 import CreateAlertForm from "@/components/create-alert-form";
 import { UserRole } from "@/lib/auth";
@@ -37,6 +38,7 @@ export default function AlertDashboard({
   const [deletingAlertId, setDeletingAlertId] = useState<string | null>(null);
   const [updatingAlertId, setUpdatingAlertId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   useEffect(() => {
     if (customAlerts) {
@@ -88,6 +90,7 @@ export default function AlertDashboard({
     const data = (await response.json()) as { alert: Alert };
     // Only prepend if we're showing the general feed or if custom alerts aren't strictly replacing this handler's output for all things
     setAlerts((previousAlerts) => [data.alert, ...previousAlerts]);
+    setShowCreateForm(false);
   }
 
   async function handleResolveAlert(id: string) {
@@ -187,17 +190,36 @@ export default function AlertDashboard({
   }, []);
 
   const gridClassName = useMemo(() => {
-    if (!canCreate) return "grid gap-4";
+    if (!canCreate || !showCreateForm) return "grid gap-4";
     return "grid gap-4 lg:grid-cols-[1fr_1.35fr]";
-  }, [canCreate]);
+  }, [canCreate, showCreateForm]);
 
   return (
     <section className={gridClassName}>
       {canCreate ? (
-        <CreateAlertForm
-          onCreateAlert={handleCreateAlert}
-          title={createTitle ?? "Create New Alert"}
-        />
+        <section className="space-y-3">
+          <button
+            type="button"
+            onClick={() => setShowCreateForm((value) => !value)}
+            className="inline-flex items-center gap-2 rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-500"
+            data-testid="toggle-alert-form"
+          >
+            {showCreateForm ? <FiX className="text-base" /> : <FiPlus className="text-base" />}
+            {showCreateForm ? "Hide Alert Form" : "Add Alert"}
+          </button>
+
+          {showCreateForm ? (
+            <CreateAlertForm
+              onCreateAlert={handleCreateAlert}
+              title={createTitle ?? "Create New Alert"}
+              onCancel={() => setShowCreateForm(false)}
+            />
+          ) : (
+            <p className="rounded-md border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+              Use <strong>Add Alert</strong> to open the form only when you need it.
+            </p>
+          )}
+        </section>
       ) : null}
 
       {!hideFeed && (

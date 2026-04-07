@@ -7,11 +7,13 @@ import { CreateAlertPayload } from "@/types/alert";
 interface CreateAlertFormProps {
   onCreateAlert: (payload: CreateAlertPayload) => Promise<void>;
   title?: string;
+  onCancel?: () => void;
 }
 
 export default function CreateAlertForm({
   onCreateAlert,
   title = "Create New Alert",
+  onCancel,
 }: CreateAlertFormProps) {
   const [titleInput, setTitleInput] = useState("");
   const [description, setDescription] = useState("");
@@ -117,14 +119,25 @@ export default function CreateAlertForm({
           </p>
         ) : null}
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-teal-500 disabled:cursor-not-allowed disabled:bg-slate-600"
-          data-testid="alert-submit"
-        >
-          {isSubmitting ? "Creating..." : "Create Alert"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-teal-500 disabled:cursor-not-allowed disabled:bg-slate-600"
+            data-testid="alert-submit"
+          >
+            {isSubmitting ? "Creating..." : "Create Alert"}
+          </button>
+          {onCancel ? (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              Cancel
+            </button>
+          ) : null}
+        </div>
       </form>
     </section>
   );
