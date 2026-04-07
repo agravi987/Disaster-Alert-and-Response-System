@@ -144,3 +144,41 @@ export async function createUser(input: {
   await usersCollection.insertOne(document);
   return mapUserDocumentToAccount(document);
 }
+
+export async function getAllUsers(): Promise<DemoAccount[]> {
+  return getDemoUsers();
+}
+
+export async function updateUser(
+  email: string,
+  updates: Partial<{ name: string; role: UserRole; password?: string }>,
+): Promise<DemoAccount | null> {
+  await ensureDemoUsers();
+  const usersCollection = await getUsersCollection();
+  
+  const normalizedEmail = normalizeEmail(email);
+  const now = new Date();
+  
+  const setPayload: any = { updatedAt: now };
+  if (updates.name) setPayload.name = updates.name.trim();
+  if (updates.role) setPayload.role = updates.role;
+  if (updates.password) setPayload.password = updates.password.trim();
+
+  const result = await usersCollection.findOneAndUpdate(
+    { email: normalizedEmail },
+    { $set: setPayload },
+    { returnDocument: "after" }
+  );
+
+  return result ? mapUserDocumentToAccount(result) : null;
+}
+
+export async function deleteUser(email: string): Promise<boolean> {
+  await ensureDemoUsers();
+  const usersCollection = await getUsersCollection();
+  
+  const normalizedEmail = normalizeEmail(email);
+  const result = await usersCollection.deleteOne({ email: normalizedEmail });
+  
+  return result.deletedCount > 0;
+}

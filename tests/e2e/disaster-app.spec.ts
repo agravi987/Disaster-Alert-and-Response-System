@@ -1,6 +1,7 @@
 import { expect, Page, test } from "@playwright/test";
 
 type RoleKey = "admin" | "citizen" | "rescueCenter" | "rescueTeam";
+type MissionStatus = "Assigned" | "In Progress" | "Completed";
 
 const ACCOUNTS = {
   admin: {
@@ -234,6 +235,35 @@ test.describe("Role Responsibilities and RBAC", () => {
     await logout(page);
 
     await loginAs(page, "rescueCenter");
+    const missionsResponse = await page.request.get("/api/missions");
+    expect(missionsResponse.status()).toBe(200);
+
+    const missionsPayload = (await missionsResponse.json()) as {
+      missions: Array<{
+        id: string;
+        status: MissionStatus;
+        assignedTeamEmail: string;
+      }>;
+    };
+    const rescueTeamEmail = ACCOUNTS.rescueTeam.email;
+    const activeRescueTeamMissions = missionsPayload.missions.filter(
+      (mission) =>
+        mission.assignedTeamEmail === rescueTeamEmail &&
+        mission.status !== "Completed",
+    );
+
+    for (const mission of activeRescueTeamMissions) {
+      const completeResponse = await page.request.patch(`/api/missions/${mission.id}`, {
+        data: { status: "Completed" as MissionStatus },
+      });
+      expect(completeResponse.status()).toBe(200);
+    }
+
+    const markAvailableResponse = await page.request.patch("/api/rescue-teams", {
+      data: { teamEmail: rescueTeamEmail, status: "available" as const },
+    });
+    expect(markAvailableResponse.status()).toBe(200);
+
     await page.goto("/rescue-center/assignments");
     await expect(page.getByTestId("team-status-list")).toBeVisible();
 
@@ -251,10 +281,19 @@ test.describe("Role Responsibilities and RBAC", () => {
     ).toHaveCount(1);
     await alertSelect.selectOption(assignedAlert!.id);
 
+    const teamsResponse = await page.request.get("/api/rescue-teams");
+    expect(teamsResponse.status()).toBe(200);
+    const teamsPayload = (await teamsResponse.json()) as {
+      teams: Array<{ email: string; status: "available" | "busy" | "offline" }>;
+    };
+    const availableTeam = teamsPayload.teams.find((team) => team.status === "available");
+    expect(availableTeam).toBeDefined();
+
     const teamSelect = page.getByTestId("assignment-team-select");
-    const teamEmail = await teamSelect.locator("option").nth(1).getAttribute("value");
-    expect(teamEmail).toBeTruthy();
-    await teamSelect.selectOption(teamEmail!);
+    await expect(
+      teamSelect.locator(`option[value="${availableTeam!.email}"]`),
+    ).toHaveCount(1);
+    await teamSelect.selectOption(availableTeam!.email);
     await page.getByTestId("assignment-submit").click();
 
     await expect(page.getByText("Mission assigned successfully.")).toBeVisible();
