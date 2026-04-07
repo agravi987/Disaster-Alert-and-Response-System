@@ -1,0 +1,26 @@
+[
+  {
+    "id": "ecc9deb6-8245-49f2-bae5-10f69da6aef0",
+    "title": "Power outage emergency 1775490606937",
+    "description": "Multiple neighborhoods without power.",
+    "location": "North District",
+    "status": "Resolved",
+    "createdAt": "2026-04-06T15:50:07.095Z"
+  },
+  {
+    "id": "a22a2a72-5736-432e-85ec-c9a8d8ec0d97",
+    "title": "Flash flood watch 1775490599321",
+    "description": "Water levels rising near residential blocks.",
+    "location": "Riverside Sector 9",
+    "status": "Active",
+    "createdAt": "2026-04-06T15:49:59.470Z"
+  },
+  {
+    "id": "e80e5b40-ecfc-482a-9542-e198ab504bd7",
+    "title": "Bridge collapse warning 1775490590829",
+    "description": "Potential collapse reported by local responders.",
+    "location": "Downtown Bridge",
+    "status": "Active",
+    "createdAt": "2026-04-06T15:49:50.996Z"
+  }
+]
